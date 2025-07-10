@@ -1,0 +1,76 @@
+@startuml
+!define SRC_DIR src
+!define MODELS_DIR SRC_DIR/models
+!define EXAMPLES_DIR SRC_DIR/examples
+
+skinparam monochrome true
+skinparam shadowing false
+skinparam class {
+    BorderColor black
+    ArrowColor black
+}
+
+folder "jira_api_client" {
+    file "README.md" as README
+    file "pyproject.toml" as PYPROJECT
+    file ".env" as ENV
+    file "LICENSE" as LICENSE
+
+    folder "docs" {
+        file "project_structure.puml" as PUML_DIAGRAM
+    }
+
+    folder "SRC_DIR" as SRC {
+        file "jira_client.py" as JIRA_CLIENT
+        file "__init__.py" as SRC_INIT
+
+        folder "MODELS_DIR" as MODELS {
+            file "__init__.py" as MODELS_INIT
+            file "base.py" as MODELS_BASE
+            file "issue.py" as MODELS_ISSUE
+            file "search.py" as MODELS_SEARCH
+            file "ticket_create.py" as MODELS_TICKET_CREATE
+            file "attachment.py" as MODELS_ATTACHMENT
+        }
+
+        folder "EXAMPLES_DIR" as EXAMPLES {
+            file "__init__.py" as EXAMPLES_INIT
+            file "get_tickets.py" as EX_GET_TICKETS
+            file "create_ticket.py" as EX_CREATE_TICKET
+            file "upload_attachment.py" as EX_UPLOAD_ATTACHMENT
+        }
+    }
+}
+
+' 依存関係の定義
+' ---
+
+' --- 例からクライアントへの利用 ---
+EX_GET_TICKETS --> JIRA_CLIENT : uses
+EX_CREATE_TICKET --> JIRA_CLIENT : uses
+EX_UPLOAD_ATTACHMENT --> JIRA_CLIENT : uses
+
+' --- クライアントからモデルへの利用 ---
+JIRA_CLIENT --> MODELS_BASE : uses
+JIRA_CLIENT --> MODELS_SEARCH : uses
+JIRA_CLIENT --> MODELS_TICKET_CREATE : uses
+JIRA_CLIENT --> MODELS_ATTACHMENT : uses
+JIRA_CLIENT --> MODELS_ISSUE : uses (indirectly)
+
+' --- モデル間の依存関係 ---
+MODELS_ISSUE --> MODELS_BASE : uses
+MODELS_SEARCH --> MODELS_ISSUE : uses
+MODELS_TICKET_CREATE --> MODELS_BASE : uses
+MODELS_ATTACHMENT --> MODELS_BASE : uses
+
+
+' --- 環境変数と設定 ---
+ENV .left. JIRA_CLIENT : configures
+
+' --- 実行方法 ---
+PYPROJECT .up. README : describes structure
+README .up. EX_GET_TICKETS : documents how to run
+README .up. EX_CREATE_TICKET : documents how to run
+README .up. EX_UPLOAD_ATTACHED : documents how to run
+
+@enduml

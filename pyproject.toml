@@ -28,6 +28,13 @@ Homepage = "https://github.com/peeeechi/jira_api_client"
 requires = ["setuptools>=61.0"] # ビルドシステムに必要なツール (setuptools が一般的)
 build-backend = "setuptools.build_meta"
 
+# [tool.setuptools.packages.find]
+# where = ["src"]
+
+# どのフォルダをモジュールとして扱うかを書きます。
+[tool.setuptools]
+py-modules = ["src"]
+
 # optional: for tools like ruff, black, mypy etc.
 # [tool.black]
 # line-length = 88

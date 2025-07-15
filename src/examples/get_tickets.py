@@ -1,13 +1,13 @@
 import os
+
+import json
 import sys
 from dotenv import load_dotenv 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 src_dir = os.path.dirname(current_dir)
-# プロジェクトのルートディレクトリのパスを取得 (例: /home/.../jira_api/)
 project_root = os.path.dirname(src_dir)
-# プロジェクトのルートディレクトリを sys.path に追加
 if project_root not in sys.path:
-    sys.path.insert(0, project_root) # 先頭に追加することで優先的に参照させる
+    sys.path.insert(0, project_root)
 from src.jira_client import JiraClinet
 from src.models.search import JiraSearchResults
 from src.models.base import JiraIssueTypeEnum, JiraStatusNameEnum
@@ -73,6 +73,12 @@ def run_get_tickets_example():
             issue_type=JiraIssueTypeEnum.BUG,
             max_results=5
         )
+        # print(json.dumps(search_results_bugs.issues, indent=2))
+
+        for issue in search_results_bugs.issues:
+            # print(issue.model_dump_json(indent=2))
+            print(issue.fields.description.to_plain_text())
+
         issues_bugs = search_results_bugs.issues
         total_count_bugs = search_results_bugs.total
         print(f"\n合計 {total_count_bugs} 件中、{len(issues_bugs)} 件の '{JiraIssueTypeEnum.BUG.value}' チケットが見つかりました。\n")

@@ -43,7 +43,7 @@ class JiraProjectMeta(BaseModel):
     """Jira課題の 'fields' 内にあるプロジェクト情報を表すPydanticモデル。"""
     self: str = Field(..., description="このプロジェクトリソースへのURL")
     id: str = Field(..., description="プロジェクトのユニークなID")
-    key: str = Field(..., description="プロジェクトキー (例: 'AEAP')")
+    key: str = Field(..., description="プロジェクトキー")
     name: str = Field(..., description="プロジェクトの表示名")
     projectTypeKey: str = Field(..., description="プロジェクトタイプキー (例: 'software')")
     simplified: typing.Optional[bool] = Field(None, description="簡略化されたプロジェクトビューであるかどうかのフラグ")

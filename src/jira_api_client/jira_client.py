@@ -1,23 +1,14 @@
 import os
-import sys
 import requests
 import typing
 import json
 import base64
 import os.path
 from pydantic import ValidationError
-
-# sys.path の設定
-current_dir = os.path.dirname(os.path.abspath(__file__))
-src_dir = os.path.dirname(current_dir)
-project_root = os.path.dirname(src_dir)
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
-from src.models.base import JiraIssueTypeEnum, JiraStatusNameEnum
-from src.models.search import JiraSearchResults
-from src.models.ticket_create import JiraCreatedIssue
-from src.models.attachment import JiraAttachment
+from .models.base import JiraIssueTypeEnum, JiraStatusNameEnum
+from .models.search import JiraSearchResults
+from .models.ticket_create import JiraCreatedIssue
+from .models.attachment import JiraAttachment
 
 class JiraClinet(object):
     """

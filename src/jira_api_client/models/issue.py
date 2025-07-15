@@ -3,51 +3,7 @@ import os
 import typing
 from pydantic import BaseModel, Field, ConfigDict, ValidationError
 
-# sys.path の設定
-current_dir = os.path.dirname(os.path.abspath(__file__))
-src_dir = os.path.dirname(current_dir)
-project_root = os.path.dirname(src_dir)
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
-# src.models.base からのインポート
-try:
-    from src.models.base import (
-        JiraStatus,
-        JiraIssueType,
-        JiraProjectMeta,
-        JiraUser,
-        JiraPriority,
-        JiraStatusCategory
-    )
-except ImportError:
-    class JiraStatus(BaseModel):
-        name: str
-        id: str
-        description: typing.Optional[str]
-        statusCategory: dict
-
-    class JiraIssueType(BaseModel):
-        name: str
-        id: str
-
-    class JiraProjectMeta(BaseModel):
-        name: str
-        id: str
-        key: str
-
-    class JiraUser(BaseModel):
-        displayName: str
-        accountId: str
-
-    class JiraPriority(BaseModel):
-        name: str
-        id: str
-
-    class JiraStatusCategory(BaseModel):
-        key: str
-        colorName: str
-
+from .base import JiraStatus, JiraIssueType, JiraProjectMeta, JiraUser, JiraPriority, JiraStatusCategory
 # --- ADF構造のためのPydanticモデル定義 ---
 
 # AdfParagraphの子要素として使用されるノードを個別に定義

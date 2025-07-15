@@ -25,15 +25,22 @@ Homepage = "https://github.com/peeeechi/jira_api_client"
 "Bug Tracker" = "https://github.com/peeeechi/jira_api_client/issues"
 
 [build-system]
-requires = ["setuptools>=61.0"] # ビルドシステムに必要なツール (setuptools が一般的)
+requires = ["setuptools>=61.0", "wheel"] # ビルドシステムに必要なツール (setuptools が一般的)
 build-backend = "setuptools.build_meta"
 
 # [tool.setuptools.packages.find]
 # where = ["src"]
 
 # どのフォルダをモジュールとして扱うかを書きます。
+# [tool.setuptools]
+# py-modules = ["src"]
+
 [tool.setuptools]
-py-modules = ["src"]
+# 'src' ディレクトリをパッケージのルートとして指定
+# packages = ["jira_api_client"]
+# packages = ["src"]
+package-dir = {"" = "src"}
+
 
 # optional: for tools like ruff, black, mypy etc.
 # [tool.black]

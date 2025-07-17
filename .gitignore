@@ -1,3 +1,6 @@
-/env
+/env_*
 .env
 __pycache__
+examples
+*.log
+*.egg-info

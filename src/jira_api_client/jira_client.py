@@ -5,11 +5,12 @@ import os.path
 import typing
 
 import requests
-from models.attachment import JiraAttachment
-from models.base import JiraIssueTypeEnum, JiraStatusNameEnum
-from models.search import JiraSearchResults
-from models.ticket_create import JiraCreatedIssue
 from pydantic import ValidationError
+
+from jira_api_client.models.attachment import JiraAttachment
+from jira_api_client.models.base import JiraIssueTypeEnum, JiraStatusNameEnum
+from jira_api_client.models.search import JiraSearchResults
+from jira_api_client.models.ticket_create import JiraCreatedIssue
 
 
 class JiraClinet(object):

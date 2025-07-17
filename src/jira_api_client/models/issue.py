@@ -2,7 +2,14 @@ import typing
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from .base import JiraIssueType, JiraPriority, JiraProjectMeta, JiraStatus, JiraStatusCategory, JiraUser
+from jira_api_client.models.base import (
+    JiraIssueType,
+    JiraPriority,
+    JiraProjectMeta,
+    JiraStatus,
+    JiraStatusCategory,
+    JiraUser,
+)
 
 # --- ADF構造のためのPydanticモデル定義 ---
 

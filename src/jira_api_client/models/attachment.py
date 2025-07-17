@@ -2,7 +2,7 @@ import typing
 
 from pydantic import BaseModel, Field
 
-from .base import JiraUser
+from jira_api_client.models.base import JiraUser
 
 
 class JiraAttachment(BaseModel):

@@ -2,7 +2,7 @@ import typing
 
 from pydantic import BaseModel, Field
 
-from .issue import JiraIssue  # issue.py からインポート
+from jira_api_client.models.issue import JiraIssue
 
 
 class JiraSearchResults(BaseModel):

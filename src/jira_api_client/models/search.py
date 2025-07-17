@@ -1,6 +1,9 @@
 import typing
+
 from pydantic import BaseModel, Field
-from .issue import JiraIssue # issue.py からインポート
+
+from .issue import JiraIssue  # issue.py からインポート
+
 
 class JiraSearchResults(BaseModel):
     """Jira APIの /search エンドポイントからの検索結果全体を表すPydanticモデル。"""

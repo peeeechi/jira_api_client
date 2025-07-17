@@ -1,0 +1,18 @@
+repos:
+  - repo: https://github.com/google/yapf
+    rev: v0.40.2 # yapfの安定した一つ前のバージョンを試す
+    hooks:
+      - id: yapf
+        name: yapf
+        files: \.py$
+  - repo: https://github.com/PyCQA/flake8
+    rev: 6.1.0 # flake8の6.x系の最終安定版を試す
+    hooks:
+      - id: flake8
+        name: flake8
+        files: \.py$
+  - repo: https://github.com/pycqa/isort
+    rev: 6.0.0 # isortの安定した一つ前のバージョンを試す (5.11.xで問題がある場合)
+    hooks:
+      - id: isort
+        name: isort (python)

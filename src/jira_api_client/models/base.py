@@ -1,16 +1,19 @@
 import typing
-from pydantic import BaseModel, Field
 from enum import Enum
+
+from pydantic import BaseModel, Field
 
 # --- 既存のEnumと基本モデル ---
 
+
 class JiraStatusCategory(BaseModel):
     """Jiraのステータスカテゴリを表すPydanticモデル。"""
-    self: str = Field(..., description="このステータスカテゴリリソースへのURL") # selfフィールドも追加
+    self: str = Field(..., description="このステータスカテゴリリソースへのURL")  # selfフィールドも追加
     id: int = Field(..., description="ステータスカテゴリのユニークなID")
     key: str = Field(..., description="ステータスカテゴリの内部キー (例: 'indeterminate')")
     colorName: str = Field(..., description="ステータスカテゴリに関連付けられた色名 (例: 'yellow')")
     name: str = Field(..., description="ステータスカテゴリの表示名 (例: '進行中')")
+
 
 class JiraStatus(BaseModel):
     """Jiraの課題ステータスを表すPydanticモデル。"""
@@ -20,6 +23,7 @@ class JiraStatus(BaseModel):
     name: str = Field(..., description="ステータスの表示名 (例: '進行中')")
     id: str = Field(..., description="ステータスのユニークなID")
     statusCategory: JiraStatusCategory = Field(..., description="ステータスが属するカテゴリ")
+
 
 class JiraIssueType(BaseModel):
     """Jiraの課題タイプを表すPydanticモデル。"""
@@ -32,12 +36,14 @@ class JiraIssueType(BaseModel):
     avatarId: typing.Optional[int] = Field(None, description="アバターのID")
     hierarchyLevel: typing.Optional[int] = Field(None, description="課題タイプの階層レベル")
 
-class JiraProjectCategory(BaseModel): # <-- 新規追加: projectCategoryのモデル
+
+class JiraProjectCategory(BaseModel):  # <-- 新規追加: projectCategoryのモデル
     """Jiraプロジェクトのカテゴリを表すPydanticモデル。"""
     self: str = Field(..., description="このプロジェクトカテゴリリソースへのURL")
     id: str = Field(..., description="プロジェクトカテゴリのユニークなID")
     description: typing.Optional[str] = Field(None, description="プロジェクトカテゴリの説明")
     name: str = Field(..., description="プロジェクトカテゴリの表示名")
+
 
 class JiraProjectMeta(BaseModel):
     """Jira課題の 'fields' 内にあるプロジェクト情報を表すPydanticモデル。"""
@@ -48,7 +54,8 @@ class JiraProjectMeta(BaseModel):
     projectTypeKey: str = Field(..., description="プロジェクトタイプキー (例: 'software')")
     simplified: typing.Optional[bool] = Field(None, description="簡略化されたプロジェクトビューであるかどうかのフラグ")
     avatarUrls: typing.Dict[str, str] = Field(..., description="異なるサイズのアバターURLの辞書")
-    projectCategory: typing.Optional[JiraProjectCategory] = Field(None, description="プロジェクトが属するカテゴリ") # <-- 追加
+    projectCategory: typing.Optional[JiraProjectCategory] = Field(None, description="プロジェクトが属するカテゴリ")  # <-- 追加
+
 
 class JiraUser(BaseModel):
     """Jiraのユーザー情報を表すPydanticモデル。"""
@@ -59,7 +66,8 @@ class JiraUser(BaseModel):
     active: bool = Field(..., description="ユーザーがアクティブであるかどうかのフラグ")
     timeZone: typing.Optional[str] = Field(None, description="ユーザーのタイムゾーン")
     avatarUrls: typing.Dict[str, str] = Field(..., description="異なるサイズのアバターURLの辞書")
-    accountType: typing.Optional[str] = Field(None, description="ユーザーアカウントのタイプ (例: 'atlassian')") # <-- 追加
+    accountType: typing.Optional[str] = Field(None, description="ユーザーアカウントのタイプ (例: 'atlassian')")  # <-- 追加
+
 
 class JiraPriority(BaseModel):
     """Jiraの優先度情報を表すPydanticモデル。"""
@@ -67,6 +75,7 @@ class JiraPriority(BaseModel):
     iconUrl: str = Field(..., description="優先度アイコンのURL")
     name: str = Field(..., description="優先度の表示名 (例: 'Lowest')")
     id: str = Field(..., description="優先度のユニークなID")
+
 
 # Jira課題タイプをEnumで定義
 class JiraIssueTypeEnum(str, Enum):
@@ -78,6 +87,7 @@ class JiraIssueTypeEnum(str, Enum):
     STORY = "Story"
     EPIC = "Epic"
     SUB_TASK = "Sub-task"
+
 
 # JiraステータスをEnumで定義
 class JiraStatusNameEnum(str, Enum):

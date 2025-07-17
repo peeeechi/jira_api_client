@@ -1,6 +1,9 @@
 import typing
+
 from pydantic import BaseModel, Field
+
 from .base import JiraUser
+
 
 class JiraAttachment(BaseModel):
     """Jiraにアップロードされた添付ファイルの情報を表すPydanticモデル。"""

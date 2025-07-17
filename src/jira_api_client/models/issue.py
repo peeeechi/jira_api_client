@@ -1,54 +1,63 @@
 import typing
-from pydantic import BaseModel, Field, ConfigDict, ValidationError
 
-from .base import JiraStatus, JiraIssueType, JiraProjectMeta, JiraUser, JiraPriority, JiraStatusCategory
+from pydantic import BaseModel, ConfigDict, Field
+
+from .base import JiraIssueType, JiraPriority, JiraProjectMeta, JiraStatus, JiraStatusCategory, JiraUser
 
 # --- ADF構造のためのPydanticモデル定義 ---
+
 
 # AdfParagraphの子要素として使用されるノードを個別に定義
 class AdfTextContent(BaseModel):
     type: typing.Literal["text"]
     text: str
 
+
 class AdfHardBreakContent(BaseModel):
     type: typing.Literal["hardBreak"]
 
+
 class AdfInlineCardAttrs(BaseModel):
     url: str
+
 
 class AdfInlineCardContent(BaseModel):
     type: typing.Literal["inlineCard"]
     attrs: AdfInlineCardAttrs
 
+
 # AdfMediaInline モデル (media とは異なるインラインメディア)
 class AdfMediaInlineAttrs(BaseModel):
     id: str
-    type: typing.Literal["file", "link"] # media と同様に file または link
+    type: typing.Literal["file", "link"]  # media と同様に file または link
     collection: str
-    url: typing.Optional[str] = None # media と同様
+    url: typing.Optional[str] = None  # media と同様
+
 
 class AdfMediaInline(BaseModel):
     type: typing.Literal["mediaInline"]
     attrs: AdfMediaInlineAttrs
 
+
 # AdfParagraphのcontentは、上記のノードのUnionのリスト
 # インラインメディアも段落の子になりうるため追加
-AdfParagraphChildContent = typing.Union[
-    AdfTextContent, AdfHardBreakContent, AdfInlineCardContent,
-    AdfMediaInline
-]
+AdfParagraphChildContent = typing.Union[AdfTextContent, AdfHardBreakContent, AdfInlineCardContent, AdfMediaInline]
+
 
 class AdfParagraph(BaseModel):
     type: typing.Literal["paragraph"]
     content: typing.List[AdfParagraphChildContent] = Field(default_factory=list)
 
+
 class AdfHeadingAttrs(BaseModel):
     level: int
+
 
 class AdfHeading(BaseModel):
     type: typing.Literal["heading"]
     content: typing.List[AdfTextContent]
     attrs: AdfHeadingAttrs
+
 
 class AdfMediaAttrs(BaseModel):
     id: str
@@ -56,68 +65,83 @@ class AdfMediaAttrs(BaseModel):
     collection: str
     url: typing.Optional[str] = None
 
+
 class AdfMedia(BaseModel):
     type: typing.Literal["media"]
     attrs: AdfMediaAttrs
 
+
 class AdfMediaSingleAttrs(BaseModel):
     layout: typing.Literal["center", "wrap-right", "wrap-left", "align-start", "align-end", "wide", "full-width"]
+
 
 class AdfMediaSingle(BaseModel):
     type: typing.Literal["mediaSingle"]
     content: typing.List[AdfMedia]
     attrs: AdfMediaSingleAttrs
 
+
 class AdfBlockQuote(BaseModel):
     type: typing.Literal["blockquote"]
     # 循環参照を避けるため、文字列リファレンスを使用
     content: typing.List['AdfDocumentContent']
 
+
 class AdfRule(BaseModel):
     type: typing.Literal["rule"]
+
 
 # AdfExpand モデル
 class AdfExpandAttrs(BaseModel):
     title: str
 
+
 class AdfExpand(BaseModel):
     type: typing.Literal["expand"]
-    content: typing.List['AdfDocumentContent'] # expand の中もドキュメントコンテンツ
+    content: typing.List['AdfDocumentContent']  # expand の中もドキュメントコンテンツ
     attrs: AdfExpandAttrs
+
 
 # AdfCodeBlock モデル
 class AdfCodeBlockAttrs(BaseModel):
     language: typing.Optional[str] = None
-    syntax: typing.Optional[str] = None # 'language' と同じ意味合いで使われることもある
+    syntax: typing.Optional[str] = None  # 'language' と同じ意味合いで使われることもある
+
 
 class AdfCodeBlock(BaseModel):
     type: typing.Literal["codeBlock"]
-    content: typing.List[AdfTextContent] # コードブロックのコンテンツは通常テキスト
-    attrs: typing.Optional[AdfCodeBlockAttrs] = None # language などの属性
+    content: typing.List[AdfTextContent]  # コードブロックのコンテンツは通常テキスト
+    attrs: typing.Optional[AdfCodeBlockAttrs] = None  # language などの属性
+
 
 # Table 関連モデル
 class AdfTableCell(BaseModel):
     type: typing.Literal["tableCell"]
-    content: typing.List['AdfDocumentContent'] # セル内は任意のADFコンテンツが可能
-    attrs: typing.Dict[str, typing.Any] = Field(default_factory=dict) # colspan, rowspan など
+    content: typing.List['AdfDocumentContent']  # セル内は任意のADFコンテンツが可能
+    attrs: typing.Dict[str, typing.Any] = Field(default_factory=dict)  # colspan, rowspan など
+
 
 class AdfTableHeader(BaseModel):
     type: typing.Literal["tableHeader"]
-    content: typing.List['AdfDocumentContent'] # ヘッダーセル内は任意のADFコンテンツが可能
-    attrs: typing.Dict[str, typing.Any] = Field(default_factory=dict) # colspan, rowspan など
+    content: typing.List['AdfDocumentContent']  # ヘッダーセル内は任意のADFコンテンツが可能
+    attrs: typing.Dict[str, typing.Any] = Field(default_factory=dict)  # colspan, rowspan など
+
 
 class AdfTableRow(BaseModel):
     type: typing.Literal["tableRow"]
     content: typing.List[typing.Union[AdfTableCell, AdfTableHeader]]
 
+
 class AdfTableAttrs(BaseModel):
-    layout: str # 'center' が来たため、より柔軟に str に変更
-    localId: typing.Optional[str] = None # テーブルのローカルID (Confluenceで使われる)
+    layout: str  # 'center' が来たため、より柔軟に str に変更
+    localId: typing.Optional[str] = None  # テーブルのローカルID (Confluenceで使われる)
+
 
 class AdfTable(BaseModel):
     type: typing.Literal["table"]
     content: typing.List[AdfTableRow]
     attrs: typing.Optional[AdfTableAttrs] = None
+
 
 # AdfMediaGroup モデル
 class AdfMediaGroup(BaseModel):
@@ -131,7 +155,7 @@ class AdfMediaGroup(BaseModel):
 # AdfListItem の content にくる可能性のある要素
 AdfListItemChildContent = typing.Union[
     AdfParagraph,
-    'AdfBulletList', # 循環参照を避けるため
+    'AdfBulletList',  # 循環参照を避けるため
     'AdfOrderedList',
     AdfHeading,
     AdfMediaSingle,
@@ -143,17 +167,21 @@ AdfListItemChildContent = typing.Union[
     AdfMediaGroup,
 ]
 
+
 class AdfListItem(BaseModel):
     type: typing.Literal["listItem"]
     content: typing.List[AdfListItemChildContent]
+
 
 class AdfBulletList(BaseModel):
     type: typing.Literal["bulletList"]
     content: typing.List[AdfListItem]
 
+
 class AdfOrderedList(BaseModel):
     type: typing.Literal["orderedList"]
     content: typing.List[AdfListItem]
+
 
 # ドキュメントのトップレベルコンテンツと、
 # TableCell や TableHeader の content にも使われるため、
@@ -161,24 +189,21 @@ class AdfOrderedList(BaseModel):
 # その後、一般的なブロックレベル要素（見出し、段落、リスト、引用、罫線）を配置
 AdfDocumentContent = typing.Union[
     AdfMediaGroup,  # 最優先
-    AdfTable,       # 次にテーブル
-    AdfCodeBlock,   # コードブロック
-    AdfExpand,      # 展開パネル
+    AdfTable,  # 次にテーブル
+    AdfCodeBlock,  # コードブロック
+    AdfExpand,  # 展開パネル
     AdfHeading,
     AdfBulletList,
     AdfOrderedList,
     AdfMediaSingle,
     AdfBlockQuote,
     AdfRule,
-    AdfParagraph,   # 最も汎用的な要素を最後に
+    AdfParagraph,  # 最も汎用的な要素を最後に
 ]
 
-def _parse_content_recursive(
-    node_list: typing.List[typing.Any],
-    indent_level: int = 0
-) -> typing.List[str]:
+
+def _parse_content_recursive(node_list: typing.List[typing.Any], indent_level: int = 0) -> typing.List[str]:
     output_lines = []
-    
 
     for node in node_list:
         indent_str = "  " * indent_level
@@ -196,7 +221,7 @@ def _parse_content_recursive(
                 elif isinstance(sub_node, AdfMediaInline):
                     media_url = sub_node.attrs.url or f"ID:{sub_node.attrs.id}"
                     paragraph_text += f"[インラインメディア: {media_url} ({sub_node.attrs.type})]"
-            
+
             lines = paragraph_text.strip().splitlines()
             if not lines:
                 output_lines.append(indent_str)
@@ -209,34 +234,35 @@ def _parse_content_recursive(
             output_lines.append(f"{indent_str}{'#' * node.attrs.level} {heading_text.strip()}")
 
         elif isinstance(node, AdfMediaSingle):
-            media_info = "".join([f"<{m.attrs.url or m.attrs.id}> ({m.attrs.type})" for m in node.content if isinstance(m, AdfMedia)])
+            media_info = "".join(
+                [f"<{m.attrs.url or m.attrs.id}> ({m.attrs.type})" for m in node.content if isinstance(m, AdfMedia)])
             output_lines.append(f"{indent_str}[メディア: {media_info.strip()} (レイアウト: {node.attrs.layout})]")
-            
+
         elif isinstance(node, AdfBlockQuote):
             output_lines.append(f"{indent_str}>")
             output_lines.extend(_parse_content_recursive(node.content, indent_level + 1))
-            
+
         elif isinstance(node, AdfRule):
             output_lines.append(f"{indent_str}---")
 
         elif isinstance(node, AdfBulletList):
             for item in node.content:
                 if isinstance(item, AdfListItem):
-                    
+
                     parsed_item_lines = _parse_content_recursive(item.content, indent_level + 1)
-                    
+
                     if parsed_item_lines:
                         # 箇条書き記号を最初の行に追加
                         parsed_item_lines[0] = f"{indent_str}● {parsed_item_lines[0].lstrip()}"
-                        
+
                         # 後続の行はインデントを調整
                         for i in range(1, len(parsed_item_lines)):
                             parsed_item_lines[i] = f"{indent_str}  {parsed_item_lines[i].lstrip()}"
-                        
+
                     output_lines.extend(parsed_item_lines)
                 else:
                     output_lines.append(f"{indent_str}[未知のリストアイテム: {type(item).__name__}]")
-        
+
         # 追加: AdfOrderedList の処理 (bulletList と同様のロジック)
         elif isinstance(node, AdfOrderedList):
             for i, item in enumerate(node.content):
@@ -245,7 +271,7 @@ def _parse_content_recursive(
                     if parsed_item_lines:
                         parsed_item_lines[0] = f"{indent_str}{i + 1}. {parsed_item_lines[0].lstrip()}"
                         for j in range(1, len(parsed_item_lines)):
-                            parsed_item_lines[j] = f"{indent_str}   {parsed_item_lines[j].lstrip()}" # 番号分のインデント調整
+                            parsed_item_lines[j] = f"{indent_str}   {parsed_item_lines[j].lstrip()}"  # 番号分のインデント調整
                     output_lines.extend(parsed_item_lines)
                 else:
                     output_lines.append(f"{indent_str}[未知のリストアイテム: {type(item).__name__}]")
@@ -268,7 +294,7 @@ def _parse_content_recursive(
         elif isinstance(node, AdfTable):
             table_lines = []
             max_col_widths = {}
-            
+
             # 最初に全てのセルの内容と最大幅を計算
             parsed_rows = []
             for row_idx, row in enumerate(node.content):
@@ -276,23 +302,24 @@ def _parse_content_recursive(
                 for col_idx, cell in enumerate(row.content):
                     cell_text = "\n".join(_parse_content_recursive(cell.content, 0)).strip()
                     parsed_cells.append(cell_text)
-                    
+
                     # 各セルの幅を計算
                     current_width = max(len(line) for line in cell_text.splitlines()) if cell_text else 0
                     max_col_widths[col_idx] = max(max_col_widths.get(col_idx, 0), current_width)
                 parsed_rows.append(parsed_cells)
-            
+
             # ヘッダー行 (存在する場合、通常最初の行) の区切り線を追加
             if parsed_rows and any(isinstance(cell_obj, AdfTableHeader) for cell_obj in node.content[0].content):
-                header_line = "|" + "|".join(["-" * (max_col_widths.get(col_idx, 0) + 2) for col_idx in range(len(parsed_rows[0]))]) + "|"
+                header_line = "|" + "|".join(
+                    ["-" * (max_col_widths.get(col_idx, 0) + 2) for col_idx in range(len(parsed_rows[0]))]) + "|"
                 table_lines.append(f"{indent_str}{header_line}")
-            
+
             # 各行を整形して出力
             for row_idx, parsed_cells in enumerate(parsed_rows):
                 formatted_row_lines = []
                 # 各セルの内容を複数行に分割し、行ごとに揃える
                 cell_content_lines = [cell.splitlines() for cell in parsed_cells]
-                
+
                 max_lines_in_row = max(len(lines) for lines in cell_content_lines) if cell_content_lines else 1
 
                 for line_idx in range(max_lines_in_row):
@@ -301,15 +328,15 @@ def _parse_content_recursive(
                         text = cell_lines[line_idx] if line_idx < len(cell_lines) else ""
                         current_line_parts.append(text.ljust(max_col_widths.get(col_idx, 0)))
                     formatted_row_lines.append(f"| {' | '.join(current_line_parts)} |")
-                
+
                 table_lines.extend([f"{indent_str}{line}" for line in formatted_row_lines])
-                
+
                 # ヘッダー行の後にもう一度区切り線
                 if row_idx == 0 and any(isinstance(cell_obj, AdfTableHeader) for cell_obj in node.content[0].content):
-                     table_lines.append(f"{indent_str}{header_line}")
+                    table_lines.append(f"{indent_str}{header_line}")
 
             output_lines.extend(table_lines)
-            
+
         # 追加: AdfMediaGroup の処理
         elif isinstance(node, AdfMediaGroup):
             media_group_info_lines = []
@@ -320,11 +347,11 @@ def _parse_content_recursive(
             output_lines.extend(media_group_info_lines)
             output_lines.append(f"{indent_str}--- メディアグループ終了 ---")
 
-
         else:
             output_lines.append(f"{indent_str}[未知のノード: {node_type}]")
 
     return output_lines
+
 
 class AdfDocument(BaseModel):
     """Atlassian Document Format (ADF) のルートモデル"""
@@ -337,12 +364,15 @@ class AdfDocument(BaseModel):
         parsed_lines = _parse_content_recursive(self.content, 0)
         return "\n".join(parsed_lines)
 
+
 # --- 既存のJiraモデルにADFを組み込む ---
+
 
 class JiraProgress(BaseModel):
     """Jira課題の進捗状況を表すPydanticモデル。"""
     progress: int = Field(..., description="現在の進捗値")
     total: int = Field(..., description="進捗の合計値")
+
 
 class JiraWatches(BaseModel):
     """Jira課題のウォッチャー情報を表すPydanticモデル。"""
@@ -350,11 +380,13 @@ class JiraWatches(BaseModel):
     watchCount: int = Field(..., description="ウォッチャーの数")
     isWatching: bool = Field(..., description="現在のユーザーがウォッチしているか")
 
+
 class JiraVotes(BaseModel):
     """Jira課題の投票情報を表すPydanticモデル。"""
     self: str = Field(..., description="この投票リソースへのURL")
     votes: int = Field(..., description="投票の総数")
     hasVoted: bool = Field(..., description="現在のユーザーが投票しているか")
+
 
 class JiraSubtask(BaseModel):
     """サブタスクを表す簡易Pydanticモデル (JiraIssueと同様の構造)。"""
@@ -362,6 +394,7 @@ class JiraSubtask(BaseModel):
     key: str = Field(..., description="サブタスクのキー")
     self: str = Field(..., description="このサブタスクリソースへのURL")
     fields: typing.Optional[dict] = Field(None, description="サブタスクのフィールド。詳細なパースは別途必要に応じて。")
+
 
 class JiraIssueFields(BaseModel):
     """Jira課題の 'fields' 部分（主要な課題属性）を表すPydanticモデル。
@@ -399,9 +432,11 @@ class JiraIssueFields(BaseModel):
     created: str = Field(..., description="課題が作成された日時 (ISO 8601形式の文字列)")
     updated: str = Field(..., description="課題が最後に更新された日時 (ISO 8601形式の文字列)")
     timeoriginalestimate: typing.Optional[int] = Field(None, description="元の見積時間（秒単位）")
-    description: typing.Optional[AdfDocument] = Field(None, description="課題の説明 (Atlassian Document Format (ADF)形式のJSON)")
+    description: typing.Optional[AdfDocument] = Field(None,
+                                                      description="課題の説明 (Atlassian Document Format (ADF)形式のJSON)")
     environment: typing.Optional[typing.Any] = Field(None, description="課題の環境情報")
     duedate: typing.Optional[str] = Field(None, description="課題の期限日時")
+
 
 class JiraIssue(BaseModel):
     """個々のJira課題を表すPydanticモデル。"""
@@ -410,6 +445,7 @@ class JiraIssue(BaseModel):
     self: str = Field(..., description="この課題リソースへのURL")
     key: str = Field(..., description="課題のキー")
     fields: JiraIssueFields = Field(..., description="課題の主要な属性を含むフィールド")
+
 
 # 循環参照のモデルを再構築
 # これらのモデルは、他のモデルの定義を参照しているため、すべてのモデルがロードされた後に再構築が必要です。

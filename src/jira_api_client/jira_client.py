@@ -1,14 +1,16 @@
-import os
-import requests
-import typing
-import json
 import base64
+import json
+import os
 import os.path
+import typing
+
+import requests
+from models.attachment import JiraAttachment
+from models.base import JiraIssueTypeEnum, JiraStatusNameEnum
+from models.search import JiraSearchResults
+from models.ticket_create import JiraCreatedIssue
 from pydantic import ValidationError
-from .models.base import JiraIssueTypeEnum, JiraStatusNameEnum
-from .models.search import JiraSearchResults
-from .models.ticket_create import JiraCreatedIssue
-from .models.attachment import JiraAttachment
+
 
 class JiraClinet(object):
     """
@@ -43,20 +45,17 @@ class JiraClinet(object):
         }
         self.__upload_headers = {
             "Accept": "application/json",
-            "X-Atlassian-Token": "no-check", # 添付ファイルアップロードには必須
+            "X-Atlassian-Token": "no-check",  # 添付ファイルアップロードには必須
             "Authorization": f"Basic {encoded_auth_string}"
         }
 
-
-    def get_tickets(
-        self,
-        project_key: str,
-        issue_type: typing.Optional[JiraIssueTypeEnum] = None,
-        assignee_account_id: typing.Optional[str] = None,
-        status_name: typing.Optional[JiraStatusNameEnum] = None,
-        max_results: int = 100,
-        start_at: int = 0
-    ) -> JiraSearchResults:
+    def get_tickets(self,
+                    project_key: str,
+                    issue_type: typing.Optional[JiraIssueTypeEnum] = None,
+                    assignee_account_id: typing.Optional[str] = None,
+                    status_name: typing.Optional[JiraStatusNameEnum] = None,
+                    max_results: int = 100,
+                    start_at: int = 0) -> JiraSearchResults:
         """
         Jiraから特定のプロジェクトのチケット一覧を取得します。
         オプションで課題タイプおよび担当者によるフィルタリングも可能です。
@@ -83,7 +82,7 @@ class JiraClinet(object):
             pydantic.ValidationError: レスポンスJSONが定義されたPydanticモデルの構造と一致しない場合。
             Exception: その他の予期せぬエラーが発生した場合。
         """
-        jql_parts = [f'project = "{project_key}"'] # JQLクエリの部品リスト
+        jql_parts = [f'project = "{project_key}"']  # JQLクエリの部品リスト
 
         if issue_type:
             jql_parts.append(f'issuetype = "{issue_type.value}"')
@@ -94,11 +93,11 @@ class JiraClinet(object):
             # もしログインユーザーにアサインされているチケットをフィルタしたい場合は
             # jql_parts.append('assignee = currentUser()')
 
-        if status_name: # <-- ステータス名でフィルタリングする条件を追加
+        if status_name:  # <-- ステータス名でフィルタリングする条件を追加
             jql_parts.append(f'status = "{status_name.value}"')
 
-        jql_query = ' AND '.join(jql_parts) # AND で結合
-        jql_query += ' ORDER BY created DESC' # ソート順序は維持
+        jql_query = ' AND '.join(jql_parts)  # AND で結合
+        jql_query += ' ORDER BY created DESC'  # ソート順序は維持
 
         params = {
             "jql": jql_query,
@@ -131,16 +130,15 @@ class JiraClinet(object):
             print(f"Jira API 'search' 予期せぬエラー: {e}")
             raise
 
-
     def create_ticket(
-        self,
-        project_key: str,
-        summary: str,
-        description: typing.Optional[str] = None,
-        issue_type: JiraIssueTypeEnum = JiraIssueTypeEnum.TASK,
-        assignee_account_id: typing.Optional[str] = None,
-        priority_name: typing.Optional[str] = None,
-        custom_fields: typing.Optional[typing.Dict[str, typing.Any]] = None # <-- 新しい引数
+            self,
+            project_key: str,
+            summary: str,
+            description: typing.Optional[str] = None,
+            issue_type: JiraIssueTypeEnum = JiraIssueTypeEnum.TASK,
+            assignee_account_id: typing.Optional[str] = None,
+            priority_name: typing.Optional[str] = None,
+            custom_fields: typing.Optional[typing.Dict[str, typing.Any]] = None  # <-- 新しい引数
     ) -> JiraCreatedIssue:
         """
         Jiraに新しいチケットを作成します。
@@ -188,26 +186,18 @@ class JiraClinet(object):
             payload["fields"]["description"] = {
                 "type": "doc",
                 "version": 1,
-                "content": [
-                    {
-                        "type": "paragraph",
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": description
-                            }
-                        ]
-                    }
-                ]
+                "content": [{
+                    "type": "paragraph",
+                    "content": [{
+                        "type": "text",
+                        "text": description
+                    }]
+                }]
             }
         if assignee_account_id:
-            payload["fields"]["assignee"] = {
-                "accountId": assignee_account_id
-            }
+            payload["fields"]["assignee"] = {"accountId": assignee_account_id}
         if priority_name:
-            payload["fields"]["priority"] = {
-                "name": priority_name
-            }
+            payload["fields"]["priority"] = {"name": priority_name}
 
         # --- カスタムフィールドをペイロードに追加 ---
         if custom_fields:
@@ -242,7 +232,10 @@ class JiraClinet(object):
             print(f"Jira API 'create_ticket' 予期せぬエラー: {e}")
             raise
 
-    def upload_attachment(self, issue_key_or_id: str, file_path: str, filename: typing.Optional[str] = None) -> typing.List[JiraAttachment]:
+    def upload_attachment(self,
+                          issue_key_or_id: str,
+                          file_path: str,
+                          filename: typing.Optional[str] = None) -> typing.List[JiraAttachment]:
         """
         指定されたJiraチケットにファイルをアップロードします。
 
@@ -272,9 +265,7 @@ class JiraClinet(object):
 
         try:
             with open(file_path, 'rb') as f:
-                files = {
-                    'file': (filename, f, 'application/octet-stream')
-                }
+                files = {'file': (filename, f, 'application/octet-stream')}
                 response = requests.post(upload_endpoint, headers=self.__upload_headers, files=files)
                 response.raise_for_status()
 

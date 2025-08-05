@@ -50,6 +50,39 @@ class JiraClinet(object):
             "Authorization": f"Basic {encoded_auth_string}"
         }
 
+    def get_tickets_by_jql(self, jql: str, max_results: int = 100, start_at: int = 0) -> JiraSearchResults:
+
+        params = {
+            "jql": jql,
+            "maxResults": max_results,
+            "startAt": start_at,
+        }
+        search_endpoint = os.path.join(self.__base_url, "search")
+
+        try:
+            response = requests.get(search_endpoint, headers=self.__headers, params=params)
+            response.raise_for_status()
+
+            data = response.json()
+            # print(json.dumps(data, indent=2, ensure_ascii=False))
+            return JiraSearchResults(**data)
+        except requests.exceptions.RequestException as err:
+            print(f"Jira API 'search' リクエストエラー: {err}")
+            if hasattr(err, 'response') and err.response is not None:
+                print(f"レスポンス詳細: {err.response.text}")
+            raise
+        except json.JSONDecodeError as e:
+            print(f"Jira API 'search' レスポンスのJSONデコードに失敗しました: {e}")
+            print(f"レスポンステキスト: {response.text if 'response' in locals() else 'レスポンスなし'}")
+            raise
+        except ValidationError as e:
+            print(f"Jira API 'search' Pydanticバリデーションエラー: {e}")
+            print(f"エラー詳細: {e.errors()}")
+            raise
+        except Exception as e:
+            print(f"Jira API 'search' 予期せぬエラー: {e}")
+            raise
+
     def get_tickets(self,
                     project_key: str,
                     issue_type: typing.Optional[JiraIssueTypeEnum] = None,
@@ -100,36 +133,7 @@ class JiraClinet(object):
         jql_query = ' AND '.join(jql_parts)  # AND で結合
         jql_query += ' ORDER BY created DESC'  # ソート順序は維持
 
-        params = {
-            "jql": jql_query,
-            "maxResults": max_results,
-            "startAt": start_at,
-        }
-        search_endpoint = os.path.join(self.__base_url, "search")
-
-        try:
-            response = requests.get(search_endpoint, headers=self.__headers, params=params)
-            response.raise_for_status()
-
-            data = response.json()
-            # print(json.dumps(data, indent=2, ensure_ascii=False))
-            return JiraSearchResults(**data)
-        except requests.exceptions.RequestException as err:
-            print(f"Jira API 'search' リクエストエラー: {err}")
-            if hasattr(err, 'response') and err.response is not None:
-                print(f"レスポンス詳細: {err.response.text}")
-            raise
-        except json.JSONDecodeError as e:
-            print(f"Jira API 'search' レスポンスのJSONデコードに失敗しました: {e}")
-            print(f"レスポンステキスト: {response.text if 'response' in locals() else 'レスポンスなし'}")
-            raise
-        except ValidationError as e:
-            print(f"Jira API 'search' Pydanticバリデーションエラー: {e}")
-            print(f"エラー詳細: {e.errors()}")
-            raise
-        except Exception as e:
-            print(f"Jira API 'search' 予期せぬエラー: {e}")
-            raise
+        return self.get_tickets_by_jql(jql_query, max_results, start_at)
 
     def create_ticket(
             self,

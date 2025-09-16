@@ -56,8 +56,9 @@ class JiraClinet(object):
             "jql": jql,
             "maxResults": max_results,
             "startAt": start_at,
+            "fields": "*all",
         }
-        search_endpoint = os.path.join(self.__base_url, "search")
+        search_endpoint = os.path.join(self.__base_url, "search/jql")
 
         try:
             response = requests.get(search_endpoint, headers=self.__headers, params=params)

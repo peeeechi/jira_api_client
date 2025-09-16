@@ -2,6 +2,7 @@ import typing
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from jira_api_client.models.attachment import JiraAttachment
 from jira_api_client.models.base import (
     JiraIssueType,
     JiraPriority,
@@ -438,6 +439,7 @@ class JiraIssueFields(BaseModel):
     watches: JiraWatches = Field(..., description="課題のウォッチャー情報")
     created: str = Field(..., description="課題が作成された日時 (ISO 8601形式の文字列)")
     updated: str = Field(..., description="課題が最後に更新された日時 (ISO 8601形式の文字列)")
+    attachment: typing.List[JiraAttachment] = Field(..., description="課題に添付されたファイルのリスト")
     timeoriginalestimate: typing.Optional[int] = Field(None, description="元の見積時間（秒単位）")
     description: typing.Optional[AdfDocument] = Field(None,
                                                       description="課題の説明 (Atlassian Document Format (ADF)形式のJSON)")

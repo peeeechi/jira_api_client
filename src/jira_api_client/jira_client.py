@@ -23,6 +23,8 @@ class JiraClinet(object):
 
     __headers: typing.Dict[str, typing.Any]
     __base_url: str
+    __upload_headers: typing.Dict[str, typing.Any]
+    __download_headers: typing.Dict[str, typing.Any]
 
     def __init__(self, base_url: str, email: str, token: str):
         """
@@ -34,6 +36,9 @@ class JiraClinet(object):
             email (str): Jiraアカウントのメールアドレス。
             token (str): Jiraで生成されたAPIトークン。
         """
+        # 末尾のスラッシュを統一
+        if not base_url.endswith('/'):
+            base_url += '/'
         self.__base_url = base_url
 
         auth_string = f"{email}:{token}"
@@ -44,14 +49,17 @@ class JiraClinet(object):
             "Content-Type": "application/json",
             "Authorization": f"Basic {encoded_auth_string}"
         }
+        self.__download_headers = {
+            # ファイルダウンロード時はContent-Typeは不要、Authorizationヘッダのみ
+            "Authorization": f"Basic {encoded_auth_string}"
+        }
         self.__upload_headers = {
+            **self.__download_headers,
             "Accept": "application/json",
             "X-Atlassian-Token": "no-check",  # 添付ファイルアップロードには必須
-            "Authorization": f"Basic {encoded_auth_string}"
         }
 
     def get_tickets_by_jql(self, jql: str, max_results: int = 100, start_at: int = 0) -> JiraSearchResults:
-
         params = {
             "jql": jql,
             "maxResults": max_results,
@@ -65,7 +73,7 @@ class JiraClinet(object):
             response.raise_for_status()
 
             data = response.json()
-            # print(json.dumps(data, indent=2, ensure_ascii=False))
+            # Pydanticモデルでバリデーション
             return JiraSearchResults(**data)
         except requests.exceptions.RequestException as err:
             print(f"Jira API 'search' リクエストエラー: {err}")
@@ -117,35 +125,30 @@ class JiraClinet(object):
             pydantic.ValidationError: レスポンスJSONが定義されたPydanticモデルの構造と一致しない場合。
             Exception: その他の予期せぬエラーが発生した場合。
         """
-        jql_parts = [f'project = "{project_key}"']  # JQLクエリの部品リスト
+        jql_parts = [f'project = "{project_key}"']
 
         if issue_type:
             jql_parts.append(f'issuetype = "{issue_type.value}"')
 
         if assignee_account_id:
-            # アカウントIDでフィルタするのが最も確実です
             jql_parts.append(f'assignee = "{assignee_account_id}"')
-            # もしログインユーザーにアサインされているチケットをフィルタしたい場合は
-            # jql_parts.append('assignee = currentUser()')
 
-        if status_name:  # <-- ステータス名でフィルタリングする条件を追加
+        if status_name:
             jql_parts.append(f'status = "{status_name.value}"')
 
-        jql_query = ' AND '.join(jql_parts)  # AND で結合
-        jql_query += ' ORDER BY created DESC'  # ソート順序は維持
+        jql_query = ' AND '.join(jql_parts)
+        jql_query += ' ORDER BY created DESC'
 
         return self.get_tickets_by_jql(jql_query, max_results, start_at)
 
-    def create_ticket(
-            self,
-            project_key: str,
-            summary: str,
-            description: typing.Optional[str] = None,
-            issue_type: JiraIssueTypeEnum = JiraIssueTypeEnum.TASK,
-            assignee_account_id: typing.Optional[str] = None,
-            priority_name: typing.Optional[str] = None,
-            custom_fields: typing.Optional[typing.Dict[str, typing.Any]] = None  # <-- 新しい引数
-    ) -> JiraCreatedIssue:
+    def create_ticket(self,
+                      project_key: str,
+                      summary: str,
+                      description: typing.Optional[str] = None,
+                      issue_type: JiraIssueTypeEnum = JiraIssueTypeEnum.TASK,
+                      assignee_account_id: typing.Optional[str] = None,
+                      priority_name: typing.Optional[str] = None,
+                      custom_fields: typing.Optional[typing.Dict[str, typing.Any]] = None) -> JiraCreatedIssue:
         """
         Jiraに新しいチケットを作成します。
 
@@ -205,15 +208,8 @@ class JiraClinet(object):
         if priority_name:
             payload["fields"]["priority"] = {"name": priority_name}
 
-        # --- カスタムフィールドをペイロードに追加 ---
         if custom_fields:
-            for field_id, field_value in custom_fields.items():
-                payload["fields"][field_id] = field_value
-                # 注意: field_value の形式はカスタムフィールドのタイプに厳密に依存します。
-                # 例: 単一選択リストの場合: {"value": "オプション名"}
-                # 例: テキストフィールドの場合: "テキスト値"
-                # 例: 複数選択リストの場合: [{"value": "オプション1"}, {"value": "オプション2"}]
-                # 例: ユーザーピッカーの場合: {"accountId": "ユーザーID"}
+            payload["fields"].update(custom_fields)
 
         try:
             response = requests.post(create_endpoint, headers=self.__headers, data=json.dumps(payload))
@@ -244,22 +240,6 @@ class JiraClinet(object):
                           filename: typing.Optional[str] = None) -> typing.List[JiraAttachment]:
         """
         指定されたJiraチケットにファイルをアップロードします。
-
-        Args:
-            issue_key_or_id (str): ファイルを添付するJiraチケットのキーまたはID (例: 'PROJ-123', '10000')。
-            file_path (str): アップロードするローカルファイルのパス。
-            filename (str, optional): Jiraに表示されるファイル名。指定しない場合、file_pathから自動抽出。
-
-        Returns:
-            typing.List[JiraAttachment]: アップロードされた添付ファイルの情報を表すPydanticオブジェクトのリスト。
-                                         通常は1つのファイルに対して1つのオブジェクト。
-
-        Raises:
-            FileNotFoundError: 指定されたファイルパスにファイルが存在しない場合。
-            requests.exceptions.RequestException: リクエスト中にネットワークまたはHTTPエラーが発生した場合。
-            json.JSONDecodeError: Jira APIからのレスポンスが有効なJSONでない場合。
-            pydantic.ValidationError: レスポンスJSONが定義されたPydanticモデルの構造と一致しない場合。
-            Exception: その他の予期せぬエラーが発生した場合。
         """
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"ファイルが見つかりません: {file_path}")
@@ -292,4 +272,42 @@ class JiraClinet(object):
             raise
         except Exception as e:
             print(f"Jira API 'upload_attachment' 予期せぬエラー: {e}")
+            raise
+
+    def download_attachment(self, attachment: JiraAttachment, save_path: typing.Optional[str] = None) -> None:
+        """
+        Jiraに添付されたファイルをダウンロードします。
+
+        Args:
+            attachment (JiraAttachment): ダウンロードするファイルのJiraAttachment instance。
+            save_path (str): ダウンロードしたファイルを保存するローカルパス（ファイル名を含む）。
+
+        Returns:
+            None
+
+        Raises:
+            requests.exceptions.RequestException: リクエスト中にネットワークまたはHTTPエラーが発生した場合。
+            Exception: その他の予期せぬエラーが発生した場合。
+        """
+        if save_path is None:
+            save_path = f"./{attachment.filename}"
+        try:
+            response = requests.get(attachment.content, headers=self.__download_headers, stream=True)
+            response.raise_for_status()
+
+            # 保存先のディレクトリが存在しない場合は作成
+            os.makedirs(os.path.dirname(save_path), exist_ok=True)
+
+            with open(save_path, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+            print(f"ファイルをダウンロードしました: {save_path}")
+
+        except requests.exceptions.RequestException as err:
+            print(f"添付ファイルダウンロードリクエストエラー: {err}")
+            if hasattr(err, 'response') and err.response is not None:
+                print(f"レスポンス詳細: {err.response.text}")
+            raise
+        except Exception as e:
+            print(f"添付ファイルダウンロード中に予期せぬエラー: {e}")
             raise

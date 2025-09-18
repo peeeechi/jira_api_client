@@ -410,6 +410,7 @@ class JiraIssueFields(BaseModel):
     """
     model_config = ConfigDict(extra='allow')
 
+    summary: str = Field(..., description="課題のタイトル")
     statuscategorychangedate: str = Field(..., description="ステータスカテゴリが変更された日時 (ISO 8601形式の文字列)")
     statusCategory: JiraStatusCategory = Field(..., description="課題のステータスカテゴリ")
     resolution: typing.Optional[typing.Any] = Field(None, description="課題の解決方法（オブジェクトまたはNull）")

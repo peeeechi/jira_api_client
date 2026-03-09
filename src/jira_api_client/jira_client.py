@@ -59,22 +59,41 @@ class JiraClinet(object):
             "X-Atlassian-Token": "no-check",  # 添付ファイルアップロードには必須
         }
 
-    def get_tickets_by_jql(self, jql: str, max_results: int = 100, start_at: int = 0) -> JiraSearchResults:
+    def get_tickets_by_jql(self, jql: str, max_results: typing.Optional[int] = None) -> JiraSearchResults:
+        search_endpoint = os.path.join(self.__base_url, "search/jql")
+        # 1回のリクエスト件数
+        fetch_size = 50
+        # 初回リクエスト用のパラメータ
+        # 新しいAPIでは startAt ではなく nextPageToken を使用
         params = {
             "jql": jql,
-            "maxResults": max_results,
-            "startAt": start_at,
+            "maxResults": fetch_size,
             "fields": "*all",
         }
-        search_endpoint = os.path.join(self.__base_url, "search/jql")
+
+        all_issues = []
 
         try:
-            response = requests.get(search_endpoint, headers=self.__headers, params=params)
-            response.raise_for_status()
+            while True:
+                response = requests.get(search_endpoint, headers=self.__headers, params=params)
+                response.raise_for_status()
+                results = JiraSearchResults(**response.json())
 
-            data = response.json()
-            # Pydanticモデルでバリデーション
-            return JiraSearchResults(**data)
+                new_issues = results.issues
+                if not new_issues:
+                    break
+
+                all_issues.extend(new_issues)
+                if results.isLast or (max_results and len(all_issues) >= max_results):
+                    break
+                token = results.nextPageToken
+                if not token:
+                    break
+                params["nextPageToken"] = token
+
+            results.issues = all_issues
+            return results
+
         except requests.exceptions.RequestException as err:
             print(f"Jira API 'search' リクエストエラー: {err}")
             if hasattr(err, 'response') and err.response is not None:
@@ -97,8 +116,7 @@ class JiraClinet(object):
                     issue_type: typing.Optional[JiraIssueTypeEnum] = None,
                     assignee_account_id: typing.Optional[str] = None,
                     status_name: typing.Optional[JiraStatusNameEnum] = None,
-                    max_results: int = 100,
-                    start_at: int = 0) -> JiraSearchResults:
+                    max_results: typing.Optional[int] = None) -> JiraSearchResults:
         """
         Jiraから特定のプロジェクトのチケット一覧を取得します。
         オプションで課題タイプおよび担当者によるフィルタリングも可能です。
@@ -111,9 +129,8 @@ class JiraClinet(object):
                                                  指定しない場合、担当者でフィルタしません。
             status_name (str, optional): フィルタしたいステータスの表示名 (例: '完了', 'In Progress')。
                                          指定しない場合、ステータスでフィルタしません。
-            max_results (int): 取得するチケットの最大数 (デフォルト: 100)。
-                               Jira APIの制限により、最大値は1000など異なる場合があります。
-            start_at (int): 取得を開始するチケットのオフセット (ページネーション用、デフォルト: 0)。
+            max_results (int): 取得するチケットの最大数 (デフォルト: None)。
+                               Noneの場合は全件取得
 
         Returns:
             JiraSearchResults: Jira APIからの検索結果を表すPydanticオブジェクト。
@@ -139,7 +156,7 @@ class JiraClinet(object):
         jql_query = ' AND '.join(jql_parts)
         jql_query += ' ORDER BY created DESC'
 
-        return self.get_tickets_by_jql(jql_query, max_results, start_at)
+        return self.get_tickets_by_jql(jql_query, max_results)
 
     def create_ticket(self,
                       project_key: str,
